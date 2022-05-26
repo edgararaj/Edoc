@@ -161,7 +161,7 @@ namespace Edoc
                 IntPtr.Zero
             );
 
-            RegisterHotKey(m_hwnd, HOTKEY_ID, MOD_CONTROL, VK_SPACE); //CTRL + SPACE
+            RegisterHotKey(m_hwnd, HOTKEY_ID, MOD_CONTROL, 'Q');
         }
 
         private static IntPtr CustomWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)

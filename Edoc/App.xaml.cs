@@ -17,7 +17,7 @@ namespace Edoc
     {
         private TaskbarIcon? notifyIcon = null;
 
-        //private InvisibleWindow invisibleWindow = new InvisibleWindow();
+        private InvisibleWindow invisibleWindow = new InvisibleWindow();
 
         protected override void OnStartup(StartupEventArgs e)
         {
