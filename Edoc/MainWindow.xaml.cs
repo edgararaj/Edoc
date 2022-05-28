@@ -65,7 +65,7 @@ namespace Edoc
         internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
         Storyboard spinnerAnimation;
-        BackgroundWorker process_tokens_worker = new BackgroundWorker();
+        BackgroundWorker process_text_worker = new BackgroundWorker();
 
         public MainWindow()
         {
@@ -73,51 +73,119 @@ namespace Edoc
             Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
             Left = (SystemParameters.WorkArea.Width - Width) / 2;
             Top = SystemParameters.WorkArea.Height / 4 - Height / 2;
-            process_tokens_worker.DoWork += ProcessTokens;
-            process_tokens_worker.RunWorkerCompleted += ProcessTokensCompleted;
-            process_tokens_worker.WorkerReportsProgress = false;
-            process_tokens_worker.WorkerSupportsCancellation = true;
 
-            /*
-            var closeButton = (Button)FindName("closeButton");
-            var closeButtonImage = (closeButton.Content as Image);
+            process_text_worker.DoWork += ProcessText;
+            process_text_worker.RunWorkerCompleted += ProcessTextCompleted;
+            process_text_worker.WorkerReportsProgress = false;
+            process_text_worker.WorkerSupportsCancellation = true;
 
-            if (closeButtonImage != null)
-            {
-                closeButtonImage.RenderTransformOrigin = new Point(0.5, 0.5);
-                closeButtonImage.RenderTransform = new RotateTransform(30);
-            }
-            */
             spinnerAnimation = (Storyboard)FindResource("spinnerAnimation");
             Storyboard.SetTarget(spinnerAnimation, spinnerImage);
         }
 
-        private void ProcessTokensCompleted(object? sender, RunWorkerCompletedEventArgs e)
+        private void ProcessTextCompleted(object? sender, RunWorkerCompletedEventArgs e)
         {
-            spinnerAnimation.Remove();
             spinnerImage.Visibility = Visibility.Hidden;
+            spinnerAnimation.Remove();
         }
 
-        private void ProcessTokens(object? sender, DoWorkEventArgs e)
+        private void ConsumeCommand(Token.Type type, IEnumerable<Token> token_list, BackgroundWorker bg_worker)
+        {
+            if (token_list.Count() == 0) return;
+
+            var process = string.Join(" ", token_list.Select(x => x.text));
+
+            switch (type)
+            {
+                case Token.Type.CommandRestart:
+                    KillProcess(process);
+                    StartProcess(process, bg_worker);
+                    break;
+                case Token.Type.CommandKill:
+                    KillProcess(process);
+                    break;
+                case Token.Type.CommandStart:
+                    StartProcess(process, bg_worker);
+                    break;
+                case Token.Type.CommandShellStart:
+                    StartShellProcess(process);
+                    break;
+            }
+
+        }
+
+        private void ProcessTokens(List<Token> token_list, BackgroundWorker bg_worker)
+        {
+            for (int token_list_index = 0; token_list_index < token_list.Count; token_list_index++)
+            {
+                var token = token_list[token_list_index];
+                switch (token.type)
+                {
+                    case Token.Type.CommandRestart:
+                    case Token.Type.CommandShellStart:
+                    case Token.Type.CommandStart:
+                    case Token.Type.CommandKill:
+                        ConsumeCommand(token.type, token_list.Skip(token_list_index + 1), bg_worker);
+                        return;
+                    case Token.Type.Text:
+                        ConsumeCommand(Token.Type.CommandStart, token_list, bg_worker);
+                        return;
+                }
+            }
+        }
+
+        public struct Token {
+            public enum Type { 
+                CommandRestart, CommandKill, CommandStart, CommandShellStart, Text
+            }
+
+            public Type type;
+            public int start, length;
+            public string text;
+        }
+
+        private void ProcessText(object? sender, DoWorkEventArgs e)
         {
             var bg_worker = sender as BackgroundWorker;
-            var tokens = e.Argument as string[];
-            if (tokens == null || bg_worker == null) return;
+            var textbox = e.Argument as string;
+            if (textbox == null || bg_worker == null) return;
 
-            Debug.WriteLine("Processing tokens...");
-            if (tokens[0] == "restart" && tokens.Length == 2)
+            Debug.WriteLine("Processing text...");
+            var token_list = new List<Token>();
+            var tokens = textbox.Trim().ToLower().Split(" ");
+            foreach (var token in tokens)
             {
-                KillProcess(tokens[1]);
-                StartProcess(tokens[1], bg_worker);
+                var start = textbox.IndexOf(token);
+                if (token[0] == '!')
+                {
+                    token_list.Add(new Token { type = Token.Type.CommandShellStart, start = start, length = token.Length });
+                    if (token.Count() > 1)
+                    {
+                        token_list.Add(new Token { type = Token.Type.Text, start = start, length = token.Length, text = token.Substring(1) });
+                    }
+                    continue;
+                }
+
+                switch (token)
+                {
+                    case "restart":
+                        token_list.Add(new Token { type = Token.Type.CommandRestart, start = start, length = token.Length });
+                        break;
+                    case "kill":
+                        token_list.Add(new Token { type = Token.Type.CommandKill, start = start, length = token.Length });
+                        break;
+                    case "start":
+                        token_list.Add(new Token { type = Token.Type.CommandStart, start = start, length = token.Length });
+                        break;
+                    default:
+                        token_list.Add(new Token { type = Token.Type.Text, start = start, length = token.Length, text = token});
+                        break;
+                }
+
             }
-            else if (tokens[0] == "kill" && tokens.Length == 2)
-            {
-                KillProcess(tokens[1]);
-            }
-            else if (tokens[0] == "start" && tokens.Length == 2)
-            {
-                StartProcess(tokens[1], bg_worker);
-            }
+
+            ProcessTokens(token_list, bg_worker);
+
         }
 
         internal void EnableBlur()
@@ -144,7 +212,7 @@ namespace Edoc
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            EnableBlur();
+            //EnableBlur();
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
@@ -218,6 +286,11 @@ namespace Edoc
             return null;
         }
 
+        private void StartShellProcess(string process_name)
+        {
+            Process.Start("cmd.exe", $"/k {process_name}");
+        }
+
         private void StartProcess(string process_name, BackgroundWorker bg_worker)
         {
             var tokenSource = new CancellationTokenSource();
@@ -282,11 +355,10 @@ namespace Edoc
         {
             if (e.Key == Key.Return)
             {
-                var tokens = textBox.Text.Trim().ToLower().Split(" ");
                 spinnerAnimation.Begin();
                 spinnerImage.Visibility = Visibility.Visible;
 
-                process_tokens_worker.RunWorkerAsync(tokens);
+                process_text_worker.RunWorkerAsync(textBox.Text);
             }
         }
 
@@ -319,7 +391,7 @@ namespace Edoc
 
         private void textBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            process_tokens_worker.CancelAsync();
+            process_text_worker.CancelAsync();
             spinnerAnimation.Remove();
             spinnerImage.Visibility = Visibility.Hidden;
         }

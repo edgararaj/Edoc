@@ -177,6 +177,7 @@ namespace Edoc
                                 Debug.WriteLine("Creating window");
                                 Application.Current.MainWindow = new MainWindow();
                                 Application.Current.MainWindow.Show();
+                                Application.Current.MainWindow.Activate();
                                 return IntPtr.Zero;
                             }
                             break;
