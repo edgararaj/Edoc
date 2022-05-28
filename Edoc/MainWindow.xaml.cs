@@ -188,7 +188,12 @@ namespace Edoc
 
         }
 
-        internal void EnableBlur()
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            EnableBlur();
+        }
+
+        private void EnableBlur()
         {
             var windowHelper = new WindowInteropHelper(this);
 
@@ -208,11 +213,6 @@ namespace Edoc
             SetWindowCompositionAttribute(windowHelper.Handle, ref data);
 
             Marshal.FreeHGlobal(accentPtr);
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            //EnableBlur();
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
