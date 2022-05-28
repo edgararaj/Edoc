@@ -190,7 +190,7 @@ namespace Edoc
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            EnableBlur();
+            //EnableBlur();
         }
 
         private void EnableBlur()

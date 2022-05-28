@@ -15,7 +15,7 @@
         FocusManager.FocusedElement="{Binding ElementName=textBox}"
         
         Title="MainWindow" Height="88" Width="450" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" WindowStyle="None" AllowsTransparency="True" MouseDown="Window_MouseDown" KeyDown="Window_KeyDown" Deactivated="Window_Deactivated" Closing="Window_Closing">
-    <Border CornerRadius="6" BorderBrush="Gray" BorderThickness="1" Background="{DynamicResource MaterialDesignPaper}" Opacity="0.85">
+    <Border CornerRadius="6" BorderBrush="DarkGray" BorderThickness="1" Background="{DynamicResource MaterialDesignPaper}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
@@ -29,7 +29,7 @@
             <Button Grid.Row="0" Grid.Column="1" Name="closeButton" Margin="7, 7, 7, 0" VerticalAlignment="Top" Height="20" Padding="0" Content="{StaticResource Close}" Style="{StaticResource MaterialDesignFlatButton}" Click="closeButton_Click"/>
 
             <TextBox Grid.Row="1" Grid.ColumnSpan="2" Name="textBox" Margin="14, 5, 14, 0" TextWrapping="NoWrap" materialDesign:HintAssist.Hint="Type anything..." VerticalAlignment="Top" FontSize="20" Padding="5, 5, 5, 5" KeyDown="TextBox_KeyDown" TextChanged="textBox_TextChanged"/>
-            <Image Grid.Row="0" Grid.Column="1" Name="spinnerImage" Visibility="Hidden" Width="24" Height="24" Source="{StaticResource Spinner}" RenderTransformOrigin="0.5, 0.5">
+            <Image Grid.Row="0" Grid.Column="1" Name="spinnerImage" Visibility="Hidden" Stretch="None" Source="{StaticResource Spinner}" RenderTransformOrigin="0.5, 0.5" IsHitTestVisible="False">
                 <Image.RenderTransform>
                     <RotateTransform x:Name="noFreeze" />
                 </Image.RenderTransform>
@@ -40,7 +40,7 @@
         <Storyboard x:Key="spinnerAnimation">
             <DoubleAnimation
                         Storyboard.TargetProperty="(Image.RenderTransform).(RotateTransform.Angle)"
-                        To="360" Duration="0:0:1" RepeatBehavior="Forever" />
+                        To="360" Duration="0:0:1.5" RepeatBehavior="Forever" />
         </Storyboard>
     </Window.Resources>
 </Window>
