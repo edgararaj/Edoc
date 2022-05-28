@@ -8,6 +8,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <BitmapImage x:Key="Search" UriSource="assets/search_bundl.ico"/>
+            <BitmapImage x:Key="Spinner" UriSource="assets/spinner.ico"/>
             <Image x:Key="Close" Source="assets/close.ico" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="None"/>
 
             <ContextMenu x:Shared="false" x:Key="SysTrayMenu">

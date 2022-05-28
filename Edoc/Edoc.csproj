@@ -17,11 +17,13 @@
 
   <ItemGroup>
     <None Remove="assets\close.ico" />
+    <None Remove="assets\spinner.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="assets\close.ico" />
     <Resource Include="assets\search_bundl.ico" />
+    <Resource Include="assets\spinner.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +33,7 @@
     </PackageReference>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
     <PackageReference Include="MaterialDesignThemes" Version="4.5.0" />
-    <PackageReference Include="Microsoft.WindowsAPICodePack-Shell" Version="1.1.0" />
+    <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
 
 </Project>

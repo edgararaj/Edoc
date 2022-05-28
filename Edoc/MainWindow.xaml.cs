@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,8 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Diagnostics;
 using Microsoft.WindowsAPICodePack.Shell;
+using System.ComponentModel;
+using System.Windows.Media.Animation;
 
 namespace Edoc
 {
@@ -61,12 +64,60 @@ namespace Edoc
         [DllImport("user32.dll")]
         internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
+        Storyboard spinnerAnimation;
+        BackgroundWorker process_tokens_worker = new BackgroundWorker();
+
         public MainWindow()
         {
             InitializeComponent();
             Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-            Left = (System.Windows.SystemParameters.WorkArea.Width - Width) / 2;
-            Top = System.Windows.SystemParameters.WorkArea.Height / 4 - Height / 2;
+            Left = (SystemParameters.WorkArea.Width - Width) / 2;
+            Top = SystemParameters.WorkArea.Height / 4 - Height / 2;
+            process_tokens_worker.DoWork += ProcessTokens;
+            process_tokens_worker.RunWorkerCompleted += ProcessTokensCompleted;
+            process_tokens_worker.WorkerReportsProgress = false;
+            process_tokens_worker.WorkerSupportsCancellation = true;
+
+            /*
+            var closeButton = (Button)FindName("closeButton");
+            var closeButtonImage = (closeButton.Content as Image);
+
+            if (closeButtonImage != null)
+            {
+                closeButtonImage.RenderTransformOrigin = new Point(0.5, 0.5);
+                closeButtonImage.RenderTransform = new RotateTransform(30);
+            }
+            */
+            spinnerAnimation = (Storyboard)FindResource("spinnerAnimation");
+            Storyboard.SetTarget(spinnerAnimation, spinnerImage);
+        }
+
+        private void ProcessTokensCompleted(object? sender, RunWorkerCompletedEventArgs e)
+        {
+            spinnerAnimation.Remove();
+            spinnerImage.Visibility = Visibility.Hidden;
+        }
+
+        private void ProcessTokens(object? sender, DoWorkEventArgs e)
+        {
+            var bg_worker = sender as BackgroundWorker;
+            var tokens = e.Argument as string[];
+            if (tokens == null || bg_worker == null) return;
+
+            Debug.WriteLine("Processing tokens...");
+            if (tokens[0] == "restart" && tokens.Length == 2)
+            {
+                KillProcess(tokens[1]);
+                StartProcess(tokens[1], bg_worker);
+            }
+            else if (tokens[0] == "kill" && tokens.Length == 2)
+            {
+                KillProcess(tokens[1]);
+            }
+            else if (tokens[0] == "start" && tokens.Length == 2)
+            {
+                StartProcess(tokens[1], bg_worker);
+            }
         }
 
         internal void EnableBlur()
@@ -124,7 +175,7 @@ namespace Edoc
             Process.Start("explorer.exe", $"shell:appsFolder\\{model_id}");
         }
 
-        private static string? SearchProcessInPath(string process_name)
+        private static string? SearchProcessInPath(string process_name, CancellationToken ct)
         { 
             var enviromentPath = Environment.GetEnvironmentVariable("PATH");
 
@@ -133,12 +184,14 @@ namespace Edoc
             var paths = enviromentPath.Split(';');
             foreach (var path in paths)
             {
-                Debug.WriteLine(path);
+                //Debug.WriteLine(path);
                 if (Directory.Exists(path))
                 {
                     foreach (var entry in Directory.GetFiles(path))
                     {
-                        Debug.WriteLine($"\t{entry}");
+                        if (ct.IsCancellationRequested) return null;
+
+                        //Debug.WriteLine($"\t{entry}");
                         var last_part = entry.Substring(entry.LastIndexOf('\\') + 1).ToLower();
                         if (process_name.Contains('.'))
                         {
@@ -165,9 +218,11 @@ namespace Edoc
             return null;
         }
 
-        private void StartProcess(string process_name)
+        private void StartProcess(string process_name, BackgroundWorker bg_worker)
         {
-            var search_in_path = Task.Run(() => SearchProcessInPath(process_name));
+            var tokenSource = new CancellationTokenSource();
+            CancellationToken ct2 = tokenSource.Token;
+            var search_in_path = Task.Run(() => SearchProcessInPath(process_name, ct2), tokenSource.Token);
 
             // GUID taken from https://docs.microsoft.com/en-us/windows/win32/shell/knownfolderid
             var FOLDERID_AppsFolder = new Guid("{1e87508d-89c2-42f0-8a7e-645a0f50ca58}");
@@ -179,6 +234,11 @@ namespace Edoc
                 {
                     Process.Start(search_in_path.Result);
                     return;
+                }
+
+                if (bg_worker.CancellationPending) {
+                    Debug.WriteLine("Cancelation requested for start process");
+                    break;
                 }
 
                 // The friendly app name
@@ -194,7 +254,7 @@ namespace Edoc
                     if (process_name == last_part)
                     {
                         StartFromAppsFolder(appUserModelID);
-                        return;
+                        break;
                     }
                 }
                 else
@@ -207,30 +267,15 @@ namespace Edoc
                     if (process_name == last_part || name.ToLower() == process_name)
                     {
                         StartFromAppsFolder(appUserModelID);
-                        return;
+                        break;
                     }
                 }
 
                 ImageSource icon = app.Thumbnail.ExtraLargeBitmapSource;
             }
 
-        }
-
-        private void ProcessTokens(string[] tokens)
-        {
-            if (tokens[0] == "restart" && tokens.Length == 2)
-            {
-                KillProcess(tokens[1]);
-                StartProcess(tokens[1]);
-            }
-            else if (tokens[0] == "kill" && tokens.Length == 2)
-            {
-                KillProcess(tokens[1]);
-            }
-            else if (tokens[0] == "start" && tokens.Length == 2)
-            {
-                StartProcess(tokens[1]);
-            }
+            Debug.WriteLine("Cancelling starting process from path");
+            tokenSource.Cancel();
         }
 
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
@@ -238,7 +283,10 @@ namespace Edoc
             if (e.Key == Key.Return)
             {
                 var tokens = textBox.Text.Trim().ToLower().Split(" ");
-                Task.Run(() => ProcessTokens(tokens));
+                spinnerAnimation.Begin();
+                spinnerImage.Visibility = Visibility.Visible;
+
+                process_tokens_worker.RunWorkerAsync(tokens);
             }
         }
 
@@ -267,6 +315,13 @@ namespace Edoc
         private void closeButton_Click(object sender, RoutedEventArgs e)
         {
             NiceClose();
+        }
+
+        private void textBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            process_tokens_worker.CancelAsync();
+            spinnerAnimation.Remove();
+            spinnerImage.Visibility = Visibility.Hidden;
         }
     }
 }
