@@ -36,6 +36,7 @@ namespace Edoc
             {
                 //create the notifyicon (it's a resource declared in NotifyIconResources.xaml
                 notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
+                Application.Current.MainWindow = new MainWindow();
             }
         }
 

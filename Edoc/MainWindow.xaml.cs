@@ -23,53 +23,71 @@ using System.Windows.Media.Animation;
 
 namespace Edoc
 {
-    internal enum AccentState
-    {
-        ACCENT_DISABLED = 1,
-        ACCENT_ENABLE_GRADIENT = 0,
-        ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
-        ACCENT_ENABLE_BLURBEHIND = 3,
-        ACCENT_INVALID_STATE = 4
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct AccentPolicy
-    {
-        public AccentState AccentState;
-        public int AccentFlags;
-        public int GradientColor;
-        public int AnimationId;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct WindowCompositionAttributeData
-    {
-        public WindowCompositionAttribute Attribute;
-        public IntPtr Data;
-        public int SizeOfData;
-    }
-
-    internal enum WindowCompositionAttribute
-    {
-        // ...
-        WCA_ACCENT_POLICY = 19
-        // ...
-    }
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        [DllImport("user32.dll")]
-        internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
-
         Storyboard spinnerAnimation;
         BackgroundWorker process_text_worker = new BackgroundWorker();
+
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmSetWindowAttribute(IntPtr hwnd, DwmWindowAttribute dwAttribute, ref int pvAttribute, int cbAttribute);
+
+        [Flags]
+        public enum DwmWindowAttribute : uint
+        {
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            DWMWA_MICA_EFFECT = 1029
+        }
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, long dwNewLong);
+
+        private const int GWL_STYLE = -16;
+
+        public static void UpdateStyleAttributes(IntPtr hwnd)
+        {
+            int trueValue = 0x01;
+
+            DwmSetWindowAttribute(hwnd, DwmWindowAttribute.DWMWA_USE_IMMERSIVE_DARK_MODE, ref trueValue, Marshal.SizeOf(typeof(int)));
+
+            DwmSetWindowAttribute(hwnd, DwmWindowAttribute.DWMWA_MICA_EFFECT, ref trueValue, Marshal.SizeOf(typeof(int)));
+        }
+
+        private void Window_ContentRendered(object sender, System.EventArgs e)
+        {
+            var windowHelper = new WindowInteropHelper(this);
+            // Apply Mica brush
+            UpdateStyleAttributes(windowHelper.Handle);
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Get PresentationSource
+            PresentationSource presentationSource = PresentationSource.FromVisual((Visual)sender);
+
+            // Subscribe to PresentationSource's ContentRendered event
+            presentationSource.ContentRendered += Window_ContentRendered;
+
+            var hwnd = new WindowInteropHelper(this).Handle;
+            var value = GetWindowLong(hwnd, GWL_STYLE);
+            Debug.WriteLine($"{value:X}");
+            const long WS_OVERLAPPED = 0x00000;
+            const long WS_THICKFRAME = 0x40000;
+            const long WS_POPUP = 0x80000000;
+            const long WS_SYSMENU = 0x80000;
+            const long WS_BORDER = 0x800000;
+            SetWindowLong(hwnd, GWL_STYLE, WS_THICKFRAME);
+        }
 
         public MainWindow()
         {
             InitializeComponent();
+            ContentRendered += Window_ContentRendered;
+
             Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
             Left = (SystemParameters.WorkArea.Width - Width) / 2;
             Top = SystemParameters.WorkArea.Height / 4 - Height / 2;
@@ -186,33 +204,6 @@ namespace Edoc
 
             ProcessTokens(token_list, bg_worker);
 
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            //EnableBlur();
-        }
-
-        private void EnableBlur()
-        {
-            var windowHelper = new WindowInteropHelper(this);
-
-            var accent = new AccentPolicy();
-            accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND;
-
-            var accentStructSize = Marshal.SizeOf(accent);
-
-            var accentPtr = Marshal.AllocHGlobal(accentStructSize);
-            Marshal.StructureToPtr(accent, accentPtr, false);
-
-            var data = new WindowCompositionAttributeData();
-            data.Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY;
-            data.SizeOfData = accentStructSize;
-            data.Data = accentPtr;
-
-            SetWindowCompositionAttribute(windowHelper.Handle, ref data);
-
-            Marshal.FreeHGlobal(accentPtr);
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
@@ -364,29 +355,23 @@ namespace Edoc
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape && !is_closing) Close();
+            if (e.Key == Key.Escape) Hide();
         }
 
-        private void NiceClose()
-        { 
-            if (!is_closing) Close();
-        }
-
-        private bool is_closing = false;
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
-            is_closing = true;
+            Hide();
+            e.Cancel = true;
         }
 
         private void Window_Deactivated(object sender, EventArgs e)
         {
-            NiceClose();
+            Hide();
         }
 
         private void closeButton_Click(object sender, RoutedEventArgs e)
         {
-            NiceClose();
+            Hide();
         }
 
         private void textBox_TextChanged(object sender, TextChangedEventArgs e)
