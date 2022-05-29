@@ -172,14 +172,8 @@ namespace Edoc
                     switch (wParam.ToInt32())
                     {
                         case HOTKEY_ID:
-                            if (Application.Current.MainWindow != null)
-                            {
-                                Debug.WriteLine("Creating window");
-                                Application.Current.MainWindow.Show();
-                                Application.Current.MainWindow.Activate();
-                                return IntPtr.Zero;
-                            }
-                            break;
+                            if (MainWindow.StaticShow()) return IntPtr.Zero;
+                            else break;
                     }
                     break;
             }

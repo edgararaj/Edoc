@@ -34,6 +34,12 @@ namespace Edoc
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, DwmWindowAttribute dwAttribute, ref int pvAttribute, int cbAttribute);
 
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, long dwNewLong);
+
         [Flags]
         public enum DwmWindowAttribute : uint
         {
@@ -41,12 +47,17 @@ namespace Edoc
             DWMWA_MICA_EFFECT = 1029
         }
 
-        [DllImport("user32.dll")]
-        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-        [DllImport("user32.dll")]
-        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, long dwNewLong);
-
-        private const int GWL_STYLE = -16;
+        public static bool StaticShow()
+        {
+            if (Application.Current.MainWindow != null)
+            {
+                Debug.WriteLine("Creating window");
+                Application.Current.MainWindow.Show();
+                Application.Current.MainWindow.Activate();
+                return true;
+            }
+            return false;
+        }
 
         public static void UpdateStyleAttributes(IntPtr hwnd)
         {
@@ -73,8 +84,10 @@ namespace Edoc
             presentationSource.ContentRendered += Window_ContentRendered;
 
             var hwnd = new WindowInteropHelper(this).Handle;
+            const int GWL_STYLE = -16;
             var value = GetWindowLong(hwnd, GWL_STYLE);
             Debug.WriteLine($"{value:X}");
+
             const long WS_OVERLAPPED = 0x00000;
             const long WS_THICKFRAME = 0x40000;
             const long WS_POPUP = 0x80000000;

@@ -23,12 +23,7 @@ namespace Edoc
                 {
                     CommandAction = () =>
                     {
-                        if (Application.Current.MainWindow != null)
-                        {
-                            Debug.WriteLine("Creating window");
-                            Application.Current.MainWindow.Show();
-                            Application.Current.MainWindow.Activate();
-                        }
+                        MainWindow.StaticShow();
                     }
                 };
             }
