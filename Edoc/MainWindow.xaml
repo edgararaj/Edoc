@@ -18,7 +18,7 @@
         Height="88" Width="450" 
         MinHeight="88" MinWidth="450" 
         MaxHeight="88" MaxWidth="450" 
-        ShowInTaskbar="False" MouseDown="Window_MouseDown" KeyDown="Window_KeyDown" Deactivated="Window_Deactivated" Closing="Window_Closing" Loaded="Window_Loaded">
+        ShowInTaskbar="False" WindowStyle="None" MouseDown="Window_MouseDown" KeyDown="Window_KeyDown" Deactivated="Window_Deactivated" Closing="Window_Closing" Loaded="Window_Loaded">
     <WindowChrome.WindowChrome>
         <WindowChrome
             CaptionHeight="0"

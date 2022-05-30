@@ -51,12 +51,18 @@ namespace Edoc
         {
             if (Application.Current.MainWindow != null)
             {
-                Debug.WriteLine("Creating window");
+                Debug.WriteLine("Showing window");
                 Application.Current.MainWindow.Show();
                 Application.Current.MainWindow.Activate();
                 return true;
             }
             return false;
+        }
+
+        public void ResetPosition()
+        {
+            Left = (SystemParameters.WorkArea.Width - Width) / 2;
+            Top = SystemParameters.WorkArea.Height / 4 - Height / 2;
         }
 
         public static void UpdateStyleAttributes(IntPtr hwnd)
@@ -101,9 +107,9 @@ namespace Edoc
             InitializeComponent();
             ContentRendered += Window_ContentRendered;
 
+            ResetPosition();
+
             Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-            Left = (SystemParameters.WorkArea.Width - Width) / 2;
-            Top = SystemParameters.WorkArea.Height / 4 - Height / 2;
 
             process_text_worker.DoWork += ProcessText;
             process_text_worker.RunWorkerCompleted += ProcessTextCompleted;
@@ -366,25 +372,33 @@ namespace Edoc
             }
         }
 
+        private void NiceClose()
+        {
+            Hide();
+            process_text_worker.CancelAsync();
+            spinnerAnimation.Remove();
+            spinnerImage.Visibility = Visibility.Hidden;
+        }
+
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape) Hide();
+            if (e.Key == Key.Escape) NiceClose();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            Hide();
+            NiceClose();
             e.Cancel = true;
         }
 
         private void Window_Deactivated(object sender, EventArgs e)
         {
-            Hide();
+            NiceClose();
         }
 
         private void closeButton_Click(object sender, RoutedEventArgs e)
         {
-            Hide();
+            NiceClose();
         }
 
         private void textBox_TextChanged(object sender, TextChangedEventArgs e)

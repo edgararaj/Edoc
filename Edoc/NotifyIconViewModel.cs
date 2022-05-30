@@ -32,14 +32,16 @@ namespace Edoc
         /// <summary>
         /// Hides the main window. This command is only enabled if a window is open.
         /// </summary>
-        public ICommand HideWindowCommand
+        public ICommand ResetPositionCommand
         {
             get
             {
                 return new DelegateCommand
                 {
-                    CommandAction = () => Application.Current.MainWindow.Close(),
-                    CanExecuteFunc = () => Application.Current.MainWindow != null
+                    CommandAction = () => {
+                        var window = Window.GetWindow(App.Current.MainWindow) as MainWindow;
+                        window?.ResetPosition();
+                    },
                 };
             }
         }

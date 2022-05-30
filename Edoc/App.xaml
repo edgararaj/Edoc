@@ -13,8 +13,8 @@
 
             <ContextMenu x:Shared="false" x:Key="SysTrayMenu">
                 <!--<MenuItem Header="Show Window" Command="{Binding ShowWindowCommand}" />-->
-                <!--<MenuItem Header="Hide Window" Command="{Binding HideWindowCommand}" />-->
-                <!--<Separator />-->
+                <MenuItem Header="Reset position" Command="{Binding ResetPositionCommand}" />
+                <Separator />
                 <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}" />
             </ContextMenu>
 
