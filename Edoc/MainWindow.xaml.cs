@@ -51,9 +51,13 @@ namespace Edoc
         {
             if (Application.Current.MainWindow != null)
             {
+                var window = Window.GetWindow(App.Current.MainWindow) as MainWindow;
+                if (window == null) return false;
+
                 Debug.WriteLine("Showing window");
-                Application.Current.MainWindow.Show();
-                Application.Current.MainWindow.Activate();
+                window.ResetPosition();
+                window.Show();
+                window.Activate();
                 return true;
             }
             return false;
