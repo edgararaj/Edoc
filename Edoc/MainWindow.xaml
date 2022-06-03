@@ -12,12 +12,11 @@
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
-        FocusManager.FocusedElement="{Binding ElementName=textBox}"
         
         Title="MainWindow" 
-        Height="88" Width="450" 
-        MinHeight="88" MinWidth="450" 
-        MaxHeight="88" MaxWidth="450" 
+        Height="90" Width="450" 
+        MinHeight="90" MinWidth="450" 
+        MaxHeight="90" MaxWidth="450" 
         ShowInTaskbar="False" WindowStyle="None" MouseDown="Window_MouseDown" KeyDown="Window_KeyDown" Deactivated="Window_Deactivated" Closing="Window_Closing" Loaded="Window_Loaded">
     <WindowChrome.WindowChrome>
         <WindowChrome
@@ -38,7 +37,7 @@
             <Rectangle Grid.Row="0" Grid.ColumnSpan="2" Name="handle" RadiusX="2" RadiusY="2" Margin="200, 10" Height="4" Fill="Gray"/>
             <Button Grid.Row="0" Grid.Column="1" Name="closeButton" Margin="7, 7, 7, 0" VerticalAlignment="Top" Height="24" Padding="0" Content="{StaticResource Close}" Style="{StaticResource MaterialDesignFlatButton}" Click="closeButton_Click"/>
 
-            <TextBox Grid.Row="1" Grid.ColumnSpan="2" Name="textBox" Margin="14, 2, 14, 0" TextWrapping="NoWrap" materialDesign:HintAssist.Hint="Type anything..." VerticalAlignment="Top" FontSize="20" Padding="5, 5, 5, 5" KeyDown="TextBox_KeyDown" TextChanged="textBox_TextChanged"/>
+            <TextBox Grid.Row="1" Grid.ColumnSpan="2" Name="textBox" Margin="17, 4, 17, 0" TextWrapping="NoWrap" materialDesign:HintAssist.Hint="Type anything..." VerticalAlignment="Top" FontSize="20" Padding="5, 5, 5, 5" KeyDown="TextBox_KeyDown" TextChanged="textBox_TextChanged"/>
             <Image Grid.Row="0" Grid.Column="1" Name="spinnerImage" Visibility="Hidden" Stretch="None" Source="{StaticResource Spinner}" RenderTransformOrigin="0.5, 0.5" IsHitTestVisible="False">
                 <Image.RenderTransform>
                     <RotateTransform x:Name="noFreeze" />

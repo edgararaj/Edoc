@@ -57,6 +57,7 @@ namespace Edoc
                 Debug.WriteLine("Showing window");
                 window.ResetPosition();
                 window.Show();
+                window.textBox.Focus();
                 window.Activate();
                 return true;
             }
